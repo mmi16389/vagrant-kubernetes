@@ -26,23 +26,32 @@ Vagrant.configure("2") do |config|
       node.vm.hostname = name
       node.vm.network "private_network", ip: network["private_network"], auto_config: true
       node.vm.network "public_network", bridge: "enp4s0", ip: network["public_network"]
-      
-      
+
       node.vm.provision "shell", path: "script/4-kubeadm-kubelet-kubectl-install.sh"
       node.vm.provision "shell", inline: "sudo usermod -aG docker $USER"
+
+      # Création de l'utilisateur avec mot de passe
+      node.vm.provision "shell", inline: <<-SHELL
+        useradd -m -s /bin/bash #{name}
+        echo '#{name}:2025' | chpasswd
+        usermod -aG sudo #{name}
+        sed -i 's/^#\\?PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
+        systemctl restart ssh
+      SHELL
 
       node.vm.provider "virtualbox" do |v|
         v.name = name
         v.memory = 2048
         v.cpus = 2
 
-        # Supprime l'interface NAT automatiquement crée
+        # Supprimer interface NAT si souhaité
         v.customize ["modifyvm", :id, "--nic1", "none"]
       end
+
+      # Connexion SSH avec l'utilisateur personnalisé
+      node.ssh.username = name
+      node.ssh.password = "2025"
     end
   end
 end
-
-
-
 
