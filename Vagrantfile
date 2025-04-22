@@ -24,10 +24,9 @@ Vagrant.configure("2") do |config|
   NODES.each do |name, network|
     config.vm.define name do |node|
       node.vm.hostname = name
-      node.vm.network "private_network", ip: network["private_network"], auto_config: true
+      node.vm.network "private_network", ip: network["private_network"]
       node.vm.network "public_network", bridge: "enp4s0", ip: network["public_network"]
-      
-      
+
       node.vm.provision "shell", path: "script/4-kubeadm-kubelet-kubectl-install.sh"
       node.vm.provision "shell", inline: "sudo usermod -aG docker $USER"
 
@@ -35,14 +34,14 @@ Vagrant.configure("2") do |config|
         v.name = name
         v.memory = 2048
         v.cpus = 2
-
-        # Supprime l'interface NAT automatiquement crée
-        v.customize ["modifyvm", :id, "--nic1", "none"]
+        #v.customize ["modifyvm", :id, "--nic1", "none"]
       end
+
+      # 🔑 Rester sur 'vagrant' pour le 1er boot
+      # Vagrant se connecte, fait le provisioning, crée l'utilisateur...
+      # Ensuite tu pourras manuellement te connecter en :
+      # ssh #{name}@192.168.56.X
+      config.vm.provision "shell", path: "script/setup-user.sh"
     end
   end
 end
-
-
-
-
