@@ -58,6 +58,13 @@ Vagrant.configure("2") do |config|
         end
       end
 
+      # Activer les services
+      machine.vm.provision "enable_services_keepalived", type: "shell", inline: <<-SHELL
+        sudo systemctl enable keepalived
+        sudo systemctl start keepalived
+        sudo systemctl enable haproxy
+        sudo systemctl start haproxy
+      SHELL
       # Ajouter les lignes /etc/hosts
       machine.vm.provision "hosts_update", type: "shell", inline: etcHosts
 
@@ -69,18 +76,6 @@ Vagrant.configure("2") do |config|
           echo '#{ssh_pub_key}' >> /root/.ssh/authorized_keys
         SHELL
       end
-
-      # Activer les services
-      machine.vm.provision "enable_services_keepalived", type: "shell", inline: <<-SHELL
-        sudo systemctl enable keepalived
-        sudo systemctl start keepalived
-      SHELL
-
-      # Activer les services
-      machine.vm.provision "enable_services_haproxy", after: :all, type: "shell", inline: <<-SHELL
-        sudo systemctl enable haproxy
-        sudo systemctl start haproxy
-      SHELL
     end
   end
 end
