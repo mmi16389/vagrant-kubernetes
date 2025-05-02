@@ -9,6 +9,11 @@ Vagrant.configure("2") do |config|
   NODES = [
     {:hostname => "haproxy-1.k8s.xdevopps.local", :ip => "192.168.39.10", :cpus => "1", :mem => "1024", :type => "proxy", :state => "MASTER"},
     {:hostname => "haproxy-2.k8s.xdevopps.local", :ip => "192.168.39.11", :cpus => "1", :mem => "1024", :type => "proxy", :state => "BACKUP"},
+    {:hostname => "master-1.k8s.xdevopps.local", :ip => "192.168.39.20", :cpus => "2", :mem => "2048", :type => "master"},
+    {:hostname => "master-2.k8s.xdevopps.local", :ip => "192.168.39.21", :cpus => "2", :mem => "2048", :type => "master"},
+    {:hostname => "master-3.k8s.xdevopps.local", :ip => "192.168.39.22", :cpus => "2", :mem => "2048", :type => "master"},
+    {:hostname => "worker-1.k8s.xdevopps.local", :ip => "192.168.39.30", :cpus => "2", :mem => "2048", :type => "worker"},
+    {:hostname => "worker-2.k8s.xdevopps.local", :ip => "192.168.39.31", :cpus => "2", :mem => "2048", :type => "worker"},
   ]
 
   # Prepare /etc/hosts content
@@ -56,15 +61,18 @@ Vagrant.configure("2") do |config|
             sudo sed -i 's/^ *priority 100/priority 90/' /etc/keepalived/keepalived.conf
           SHELL
         end
+        # Activer les services
+        machine.vm.provision "enable_services_keepalived_and_haproxy", type: "shell", inline: <<-SHELL
+          sudo systemctl enable keepalived
+          sudo systemctl start keepalived
+          sudo systemctl enable haproxy
+          sudo systemctl start haproxy
+        SHELL
       end
 
-      # Activer les services
-      machine.vm.provision "enable_services_keepalived", type: "shell", inline: <<-SHELL
-        sudo systemctl enable keepalived
-        sudo systemctl start keepalived
-        sudo systemctl enable haproxy
-        sudo systemctl start haproxy
-      SHELL
+      if node[:type] == "master"
+        etcHosts += "echo '192.168.39.254 vip-api.cluster.local' >> /etc/hosts"
+      end
       # Ajouter les lignes /etc/hosts
       machine.vm.provision "hosts_update", type: "shell", inline: etcHosts
 
