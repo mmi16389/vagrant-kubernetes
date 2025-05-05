@@ -1,0 +1,34 @@
+
+Vagrant.configure("2") do |config|
+  NODES = [
+    {:hostname => "master-k8s", :server => "master-k8s.local", :ip => "192.168.56.10", :type => "master"},
+    {:hostname => "worker1-k8s", :server => "worker1-k8s.local", :ip => "192.168.56.21", :type => "worker"},
+    # {:hostname => "worker2-k8s", :server => "worker2-k8s.local", :ip => "192.168.56.22"},
+    # {:hostname => "worker3-k8s", :server => "worker3-k8s.local", :ip => "192.168.56.23"},
+  ]
+
+  config.vm.box = "ubuntu/jammy64"
+  #config.vm.synced_folder "#{Dir.pwd}/config/", "/home/vagrant/tools"
+  
+  config.vm.provider :virtualbox do |vbox|
+    vbox.memory = 2048
+    vbox.cpus = 2
+  end
+ 
+  NODES.each do |node|
+    config.vm.define node[:hostname] do |machine|
+      machine.vm.hostname = node[:hostname]
+      machine.vm.network "private_network", ip: node[:ip]
+
+      (1..4).each do|id|
+        machine.vm.provision "shell", path: "scripts/commons/#{id}.sh"
+      end 
+
+      # if node[:type] == "master"
+      #   machine.vm.provision "provision_mater",type: "shell", path: "scripts/#{node[:hostname]}.sh"
+      # end
+    end
+  
+  end
+
+end
